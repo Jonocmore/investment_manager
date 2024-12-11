@@ -1,0 +1,14 @@
+portfolio:
+  stocks:
+    - AAPL
+    - MSFT
+  etfs:
+    - SPY
+  crypto:
+    - bitcoin
+    - ethereum
+watchlist:
+  stocks:
+    - TSLA
+  crypto:
+    - cardano

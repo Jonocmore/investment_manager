@@ -1,0 +1,6 @@
+settings:
+  data_start_date: "2022-01-01"
+  daily_summary_time: "06:00"
+  weekly_analysis_day: "Sunday"
+  weekly_analysis_time: "07:00"
+  # Add more as needed

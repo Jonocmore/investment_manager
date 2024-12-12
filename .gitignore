@@ -1,2 +1,19 @@
 config/secrets.yaml
 secrets.yaml
+# Virtual Environments
+venv/
+.venv/
+env/
+.env/
+
+# Other common directories to ignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+build/
+dist/
+*.egg-info/
+.DS_Store

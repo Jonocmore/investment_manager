@@ -1,11 +1,19 @@
 # fetch_reddit.py
+
 import os
 import asyncio
 import asyncpraw
 import pandas as pd
-from utils import secrets
+from utils import secrets  # Ensure this imports your secrets correctly
 
 async def fetch_reddit_data_for_asset(asset, limit=20):
+    """
+    Fetches the top Reddit posts for a given asset and saves them to a CSV file.
+
+    Parameters:
+    - asset (str): The asset symbol (e.g., 'AAPL', 'MSFT').
+    - limit (int): The number of top posts to fetch.
+    """
     reddit_client_id = secrets.get('reddit_client_id')
     reddit_client_secret = secrets.get('reddit_client_secret')
     reddit_user_agent = secrets.get('reddit_user_agent')

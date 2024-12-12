@@ -4,6 +4,7 @@ on:
   schedule:
     # Runs every day at 6:00 UTC
     - cron: '0 6 * * *'
+  workflow_dispatch:  # Enables manual triggering
 
 jobs:
   run-daily-workflow:

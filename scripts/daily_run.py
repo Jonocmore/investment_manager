@@ -39,7 +39,7 @@ async def run_pipeline_for_asset(asset):
         print(f"Failed to fetch news for {asset}: {e}")
 
     try:
-        await fetch_reddit_data_for_asset(asset, limit=20)  # Await the coroutine
+        await fetch_reddit_data_for_asset(asset, limit=20)  # Properly await the coroutine
     except Exception as e:
         print(f"Failed to fetch Reddit data for {asset}: {e}")
 
@@ -87,7 +87,6 @@ async def run_pipeline_for_asset(asset):
         try:
             df_existing = pd.read_csv(daily_summary_file)
             df_new = pd.DataFrame([row])
-            # Use pd.concat instead of append
             df_combined = pd.concat([df_existing, df_new], ignore_index=True)
             df_combined.to_csv(daily_summary_file, index=False)
             print(f"Updated daily summaries file for {asset}.")

@@ -1,17 +1,21 @@
 # weekly_overview.py
+
 import os
 import pandas as pd
 import datetime
-import openai  # Ensure openai>=1.0.0 is installed
+from openai import OpenAI  # Updated import for openai>=1.0.0
 import requests
 from utils import portfolio, settings, secrets
 
 # Initialize OpenAI client with the API key from environment variables
-openai.api_key = secrets.get('openai_api_key')
+client = OpenAI(
+    api_key=secrets.get('openai_api_key')  # Optional: Defaults to environment variable
+)
 
 # Verify that the OpenAI API key is set
-if not openai.api_key:
+if not client.api_key:
     raise ValueError("OPENAI_API_KEY is not set in the environment variables.")
+
 
 def send_telegram_message(message, bot_token, chat_id):
     """
@@ -29,6 +33,7 @@ def send_telegram_message(message, bot_token, chat_id):
         print("Weekly overview sent to Telegram.")
     except requests.exceptions.RequestException as e:
         print(f"Failed to send message to Telegram: {e}")
+
 
 def generate_weekly_overview():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -91,11 +96,17 @@ Your response should be a single comprehensive summary message, focusing on stra
 """
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # Updated to use GPT-4
+        response = client.chat.completions.create(
+            model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a strategic financial advisor who synthesizes multiple asset insights into a coherent strategy."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are a strategic financial advisor who synthesizes multiple asset insights into a coherent strategy."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
             ],
             max_tokens=2000,
             temperature=0.7
@@ -106,6 +117,7 @@ Your response should be a single comprehensive summary message, focusing on stra
 
     overview = response.choices[0].message.content.strip()
     return overview
+
 
 if __name__ == "__main__":
     try:

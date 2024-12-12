@@ -1,14 +1,17 @@
 # ai_analysis.py
+
 import os
 import pandas as pd
-import openai  # Ensure openai>=1.0.0 is installed
+from openai import OpenAI  # Updated import for openai>=1.0.0
 from utils import portfolio, settings, secrets
 
 # Initialize OpenAI client with the API key from environment variables
-openai.api_key = secrets.get('openai_api_key')
+client = OpenAI(
+    api_key=secrets.get('openai_api_key')  # Optional: Defaults to environment variable
+)
 
 # Verify that the OpenAI API key is set
-if not openai.api_key:
+if not client.api_key:
     raise ValueError("OPENAI_API_KEY is not set in the environment variables.")
 
 def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
@@ -119,11 +122,17 @@ Just give a direct, current action based on the synthesis of all data.
 """
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # Updated to use GPT-4
+        response = client.chat.completions.create(
+            model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a financial assistant who provides precise, timely, and data-driven market insights without telling the user to watch or monitor anything."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are a financial assistant who provides precise, timely, and data-driven market insights without telling the user to watch or monitor anything."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
             ],
             max_tokens=1200,
             temperature=0.7

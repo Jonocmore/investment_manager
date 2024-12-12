@@ -2,6 +2,7 @@
 import os
 import asyncio
 import asyncpraw
+import pandas as pd
 from utils import secrets
 
 async def fetch_reddit_data_for_asset(asset, limit=20):
@@ -20,7 +21,7 @@ async def fetch_reddit_data_for_asset(asset, limit=20):
     )
 
     try:
-        subreddit = reddit.subreddit(asset)
+        subreddit = reddit.subreddit(asset)  # Do NOT await this
         posts = []
         async for submission in subreddit.hot(limit=limit):
             posts.append({
@@ -28,9 +29,7 @@ async def fetch_reddit_data_for_asset(asset, limit=20):
                 "score": submission.score,
                 "subreddit": submission.subreddit.display_name
             })
-        # Save or process the posts as needed
-        # Example: Save to CSV
-        import pandas as pd
+        # Save to CSV
         data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
         reddit_file = os.path.join(data_dir, f"reddit_{asset}_data.csv")
         df_posts = pd.DataFrame(posts)

@@ -14,7 +14,7 @@ watchlist:
     - CPRT
   crypto:
     - cardano
-    - xrp
+    - ripple
     - sui
     - ethereum
     - solana

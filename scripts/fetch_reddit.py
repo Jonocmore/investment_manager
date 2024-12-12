@@ -9,9 +9,9 @@ def fetch_reddit_data_for_asset(asset, limit=20):
     Saves results to data/reddit_<asset>_data.csv.
     """
     reddit = praw.Reddit(
-        client_id=secrets['reddit_client_id'],
-        client_secret=secrets['reddit_client_secret'],
-        user_agent=secrets['reddit_user_agent']
+        client_id=secrets['REDDIT_CLIENT_ID'],
+        client_secret=secrets['REDDIT_CLIENT_SECRET'],
+        user_agent=secrets['REDDIT_USER_AGENT']
     )
 
     # Decide on query keywords

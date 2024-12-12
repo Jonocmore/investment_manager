@@ -58,7 +58,7 @@ def fetch_news_for_asset(asset, limit=20):
     Fetch recent news headlines related to the asset using NewsAPI.
     Saves to data/news_<asset>_data.csv.
     """
-    api_key = secrets.get('newsapi_key')
+    api_key = secrets.get('NEWSAPI_KEY')
     if not api_key:
         print("No NewsAPI key found. Skipping news fetch for asset.")
         return

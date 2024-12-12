@@ -1,7 +1,10 @@
 import os
 import pandas as pd
 from openai import OpenAI
-from utils import secrets
+from utils import portfolio, settings, secrets  # Assuming portfolio and settings are still loaded from YAML
+
+# Remove or comment out the import from utils if it's relying on secrets.yaml
+# from utils import secrets
 
 client = OpenAI(api_key=secrets['openai_api_key'])
 
@@ -9,10 +12,6 @@ def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
     """
     Generate a summary that uses historical data for context but focuses on immediate actionable insights.
     The heading of the message includes the asset and whether it's from the portfolio or watchlist.
-
-    The instructions now emphasize that the AI performs the daily monitoring,
-    so the user does not need to be reminded to watch or monitor conditions.
-    Instead, the model should provide direct, immediate actions based on current conditions.
     """
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     data_dir = os.path.join(base_dir, 'data')
@@ -135,7 +134,11 @@ def send_telegram_message(message, bot_token, chat_id):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {
         "chat_id": chat_id,
-        "text": message
+        "text": message,
+        "parse_mode": "Markdown"  # Optional: for better formatting
     }
-    requests.post(url, params=params)
-    print("Message sent to Telegram.")
+    response = requests.post(url, params=params)
+    if response.status_code == 200:
+        print("Message sent to Telegram.")
+    else:
+        print(f"Failed to send message to Telegram: {response.text}")

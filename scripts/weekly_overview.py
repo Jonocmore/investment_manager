@@ -2,19 +2,21 @@ import os
 import pandas as pd
 import datetime
 from openai import OpenAI
-from utils import secrets
 
-client = OpenAI(api_key=secrets['openai_api_key'])
+import requests
 
 def send_telegram_message(message, bot_token, chat_id):
-    import requests
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {
         "chat_id": chat_id,
-        "text": message
+        "text": message,
+        "parse_mode": "Markdown"  # Optional: for better formatting
     }
-    requests.post(url, params=params)
-    print("Weekly overview sent to Telegram.")
+    response = requests.post(url, params=params)
+    if response.status_code == 200:
+        print("Weekly overview sent to Telegram.")
+    else:
+        print(f"Failed to send message to Telegram: {response.text}")
 
 def generate_weekly_overview():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -57,6 +59,8 @@ Use this data to:
 Your response should be a single comprehensive summary message, focusing on strategic actions to take at this point in time. Be clear and direct, leveraging the patterns observed in these daily summaries.
 """
 
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
@@ -76,6 +80,6 @@ if __name__ == "__main__":
     print(overview)
 
     # Send to Telegram
-    bot_token = secrets['telegram_bot_token']
-    chat_id = secrets['telegram_chat_id']
-    send_telegram_message(overview, bot_token, chat_id)
+    telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    send_telegram_message(overview, telegram_bot_token, telegram_chat_id)

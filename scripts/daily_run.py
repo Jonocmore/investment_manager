@@ -27,16 +27,32 @@ async def run_pipeline_for_asset(asset):
         source = "watchlist"
 
     # 1. Fetch Data
-    fetch_data_for_asset(asset)
-    fetch_news_for_asset(asset, limit=20)
-    fetch_reddit_data_for_asset(asset, limit=20)
+    try:
+        fetch_data_for_asset(asset)
+    except Exception as e:
+        print(f"Failed to fetch data for {asset}: {e}")
+        return
+
+    try:
+        fetch_news_for_asset(asset, limit=20)
+    except Exception as e:
+        print(f"Failed to fetch news for {asset}: {e}")
+
+    try:
+        fetch_reddit_data_for_asset(asset, limit=20)
+    except Exception as e:
+        print(f"Failed to fetch Reddit data for {asset}: {e}")
 
     # 2. Process Data
-    process_data_for_asset(asset)
+    try:
+        process_data_for_asset(asset)
+    except Exception as e:
+        print(f"Failed to process data for {asset}: {e}")
+        return
 
     # 3. Generate daily summary
     summary = generate_summary_for_asset(asset, source=source, lookback_days=30)
-    print(summary)
+    print(f"Summary for {asset}:\n{summary}\n")
 
     # 4. Send to Telegram (optional)
     bot_token = secrets.get('telegram_bot_token')
@@ -61,8 +77,12 @@ async def run_pipeline_for_asset(asset):
     }
 
     if not os.path.exists(daily_summary_file):
-        df = pd.DataFrame([row])
-        df.to_csv(daily_summary_file, index=False)
+        try:
+            df = pd.DataFrame([row])
+            df.to_csv(daily_summary_file, index=False)
+            print(f"Created daily summaries file for {asset}.")
+        except Exception as e:
+            print(f"Failed to create daily summaries file for {asset}: {e}")
     else:
         try:
             df_existing = pd.read_csv(daily_summary_file)
@@ -70,8 +90,9 @@ async def run_pipeline_for_asset(asset):
             # Use pd.concat instead of append
             df_combined = pd.concat([df_existing, df_new], ignore_index=True)
             df_combined.to_csv(daily_summary_file, index=False)
+            print(f"Updated daily summaries file for {asset}.")
         except Exception as e:
-            print(f"Failed to update daily summaries: {e}")
+            print(f"Failed to update daily summaries file for {asset}: {e}")
 
     print(f"Pipeline completed for {asset}.\n")
 

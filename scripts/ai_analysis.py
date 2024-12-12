@@ -1,10 +1,8 @@
+# ai_analysis.py
 import os
 import pandas as pd
 from openai import OpenAI
-from utils import portfolio, settings, secrets  # Assuming portfolio and settings are still loaded from YAML
-
-# Remove or comment out the import from utils if it's relying on secrets.yaml
-# from utils import secrets
+from utils import portfolio, settings, secrets
 
 client = OpenAI(api_key=secrets['openai_api_key'])
 
@@ -85,7 +83,7 @@ def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
         action_context = (
             "You currently hold this asset. Provide direct instructions based on current conditions. "
             "Do not ask the user to monitor or watch anything; simply state what to do right now, "
-            "such as 'Add to position', 'Hold steady', 'Trim your stake', or 'Sell immediately' if warranted."
+            "such as 'Add to position', 'Hold steady', 'Reduce your stake by X%', or 'Sell immediately' if warranted."
         )
     else:
         # watchlist

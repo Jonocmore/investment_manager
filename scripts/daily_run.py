@@ -1,3 +1,4 @@
+# daily_run.py
 import os
 import asyncio
 import pandas as pd
@@ -38,8 +39,8 @@ async def run_pipeline_for_asset(asset):
     print(summary)
 
     # 4. Send to Telegram (optional)
-    bot_token = secrets['TELEGRAM_BOT_TOKEN']
-    chat_id = secrets['TELEGRAM_CHAT_ID']
+    bot_token = secrets['telegram_bot_token']
+    chat_id = secrets['telegram_chat_id']
     send_telegram_message(summary, bot_token, chat_id)
 
     # 5. Store daily summary for weekly aggregation

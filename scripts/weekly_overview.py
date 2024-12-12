@@ -2,8 +2,8 @@ import os
 import pandas as pd
 import datetime
 from openai import OpenAI
-
 import requests
+from utils import portfolio, settings, secrets  # Assuming portfolio and settings are still loaded from YAML
 
 def send_telegram_message(message, bot_token, chat_id):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -59,7 +59,8 @@ Use this data to:
 Your response should be a single comprehensive summary message, focusing on strategic actions to take at this point in time. Be clear and direct, leveraging the patterns observed in these daily summaries.
 """
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    openai_api_key = secrets['openai_api_key']
+    client = OpenAI(api_key=openai_api_key)
 
     response = client.chat.completions.create(
         model="gpt-4",
@@ -80,6 +81,6 @@ if __name__ == "__main__":
     print(overview)
 
     # Send to Telegram
-    telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    telegram_bot_token = secrets['telegram_bot_token']
+    telegram_chat_id = secrets['telegram_chat_id']
     send_telegram_message(overview, telegram_bot_token, telegram_chat_id)

@@ -1,7 +1,9 @@
+# ai_analysis.py
+
 import os
 import pandas as pd
 from openai import OpenAI  # Updated import for openai>=1.0.0
-from utils import portfolio, settings, secrets, is_crypto
+from utils import portfolio, settings, secrets
 
 # Initialize OpenAI client with the API key from environment variables
 client = OpenAI(
@@ -15,7 +17,7 @@ if not client.api_key:
 def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
     """
     Generate a summary that uses historical data for context but focuses on immediate actionable insights.
-    Includes specific crypto indicators such as volume and market cap for cryptocurrency assets.
+    The heading of the message includes the asset and whether it's from the portfolio or watchlist.
     """
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     data_dir = os.path.join(base_dir, 'data')
@@ -44,22 +46,13 @@ def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
 
     # Extract indicators
     latest = df_asset.iloc[-1]
-    close_prices = df_asset['price'] if is_crypto(asset) else df_asset['Close']
-    if close_prices.empty:
-        return "No close price data available."
-
-    # Extract crypto-specific indicators
-    if is_crypto(asset):
-        volume = latest['volume'] if 'volume' in df_asset.columns else None
-        market_cap = latest['market_cap'] if 'market_cap' in df_asset.columns else None
-    else:
-        volume = latest['Volume'] if 'Volume' in df_asset.columns else None
-        market_cap = None  # Market cap is not typically available for stocks/ETFs in this data set
-
-    # Extract RSI and MACD indicators if available
     rsi_value = next((latest[c] for c in df_asset.columns if 'RSI' in c), None)
     macd_line = latest['MACD_line'] if 'MACD_line' in df_asset.columns else None
     macd_signal = latest['MACD_signal'] if 'MACD_signal' in df_asset.columns else None
+
+    close_prices = df_asset['Close'].dropna()
+    if close_prices.empty:
+        return "No close price data available."
 
     # Recent data for short-term view
     end_date = df_asset.index[-1]
@@ -101,6 +94,7 @@ def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
             "such as 'Add to position', 'Hold steady', 'Reduce your stake by X%', or 'Sell immediately' if warranted."
         )
     else:
+        # watchlist
         action_context = (
             "This asset is on the watchlist. Provide direct instructions on whether to buy now, wait, "
             "or avoid entirely based on current conditions. Do not tell the user to monitor or watch; "
@@ -114,14 +108,14 @@ You are a top-tier financial analyst. Provide a heading with the asset and its s
 Heading: "{asset.upper()} ({source.capitalize()})"
 
 You have about a year of historical data and recent indicators for {asset}.
-For cryptocurrencies, include volume (latest: {volume}), market cap (latest: {market_cap}), and price change (~{pct_change_recent:.2f}% recent change if available).
 Use long-term data to identify patterns that matter now, and short-term indicators (last {lookback_days} days) for immediate action.
 
 Incorporate recent news and Reddit sentiment if relevant.
-Reference exact indicators (RSI={rsi_value}, MACD_line={macd_line}, MACD_signal={macd_signal}).
+Reference exact indicators (RSI={rsi_value}, MACD_line={macd_line}, MACD_signal={macd_signal}, ~{pct_change_recent:.2f}% recent change if available).
 
 Your final recommendation must be a direct action:
 - If portfolio: e.g. "Add more now", "Hold at current levels", "Reduce your position by X%", or "Sell immediately".
+- For cryptocurrencies, include volume, market cap, and price change (~{pct_change_recent:.2f}% recent change if available).
 - If watchlist: e.g. "Buy now", "Begin a small initial position", "Wait for a pullback before buying", or "Avoid entry at this time".
 
 Do not tell the user to monitor or watch conditions, as this analysis runs daily and the AI will surface changes as needed.
@@ -150,3 +144,21 @@ Just give a direct, current action based on the synthesis of all data.
 
     summary = response.choices[0].message.content.strip()
     return summary
+
+def send_telegram_message(message, bot_token, chat_id):
+    """
+    Send a message to a Telegram chat using the provided bot token and chat ID.
+    """
+    import requests
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    params = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown"  # Optional: for better formatting
+    }
+    try:
+        response = requests.post(url, params=params)
+        response.raise_for_status()
+        print("Message sent to Telegram.")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to send message to Telegram: {e}")

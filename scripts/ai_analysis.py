@@ -1,10 +1,14 @@
-# ai_analysis.py
 import os
 import pandas as pd
-from openai import OpenAI
+import openai  # Import the entire openai package
 from utils import portfolio, settings, secrets
 
-client = OpenAI(api_key=secrets['openai_api_key'])
+# Initialize OpenAI client with the API key from environment variables
+openai.api_key = secrets.get('openai_api_key')
+
+# Verify that the OpenAI API key is set
+if not openai.api_key:
+    raise ValueError("OPENAI_API_KEY is not set in the environment variables.")
 
 def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
     """
@@ -23,7 +27,7 @@ def generate_summary_for_asset(asset, source="portfolio", lookback_days=30):
     if df_asset.empty:
         return "No data available."
 
-    # Set index
+    # Set index based on available date column
     if 'Date' in df_asset.columns:
         df_asset['Date'] = pd.to_datetime(df_asset['Date'], errors='coerce')
         df_asset.set_index('Date', inplace=True)
@@ -113,21 +117,28 @@ Do not tell the user to monitor or watch conditions, as this analysis runs daily
 Just give a direct, current action based on the synthesis of all data.
 """
 
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a financial assistant who provides precise, timely, and data-driven market insights without telling the user to watch or monitor anything."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=1200,
-        temperature=0.7
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a financial assistant who provides precise, timely, and data-driven market insights without telling the user to watch or monitor anything."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1200,
+            temperature=0.7
+        )
+    except Exception as e:
+        print(f"OpenAI API request failed: {e}")
+        return "Failed to generate summary."
 
     summary = response.choices[0].message.content.strip()
     return summary
 
 
 def send_telegram_message(message, bot_token, chat_id):
+    """
+    Send a message to a Telegram chat using the provided bot token and chat ID.
+    """
     import requests
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {
@@ -135,8 +146,9 @@ def send_telegram_message(message, bot_token, chat_id):
         "text": message,
         "parse_mode": "Markdown"  # Optional: for better formatting
     }
-    response = requests.post(url, params=params)
-    if response.status_code == 200:
+    try:
+        response = requests.post(url, params=params)
+        response.raise_for_status()
         print("Message sent to Telegram.")
-    else:
-        print(f"Failed to send message to Telegram: {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to send message to Telegram: {e}")

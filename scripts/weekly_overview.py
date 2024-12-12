@@ -1,22 +1,34 @@
+# weekly_overview.py
 import os
 import pandas as pd
 import datetime
-from openai import OpenAI
+import openai  # Import the entire openai package
 import requests
-from utils import portfolio, settings, secrets  # Assuming portfolio and settings are still loaded from YAML
+from utils import portfolio, settings, secrets
+
+# Initialize OpenAI client with the API key from environment variables
+openai.api_key = secrets.get('openai_api_key')
+
+# Verify that the OpenAI API key is set
+if not openai.api_key:
+    raise ValueError("OPENAI_API_KEY is not set in the environment variables.")
 
 def send_telegram_message(message, bot_token, chat_id):
+    """
+    Send a message to a Telegram chat using the provided bot token and chat ID.
+    """
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {
         "chat_id": chat_id,
         "text": message,
         "parse_mode": "Markdown"  # Optional: for better formatting
     }
-    response = requests.post(url, params=params)
-    if response.status_code == 200:
+    try:
+        response = requests.post(url, params=params)
+        response.raise_for_status()
         print("Weekly overview sent to Telegram.")
-    else:
-        print(f"Failed to send message to Telegram: {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to send message to Telegram: {e}")
 
 def generate_weekly_overview():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,12 +38,27 @@ def generate_weekly_overview():
     if not os.path.exists(daily_summary_file):
         return "No daily summaries found."
 
-    df = pd.read_csv(daily_summary_file)
+    try:
+        df = pd.read_csv(daily_summary_file)
+    except Exception as e:
+        print(f"Failed to read daily summaries: {e}")
+        return "Failed to read daily summaries."
+
+    # Ensure the 'date' column is in datetime format
+    if 'date' not in df.columns:
+        print("The 'date' column is missing from daily_summaries.csv.")
+        return "Invalid daily summaries format."
+
+    try:
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    except Exception as e:
+        print(f"Failed to parse dates: {e}")
+        return "Invalid date format in daily summaries."
 
     # Filter for the last 7 days
     today = datetime.datetime.now()
     one_week_ago = today - datetime.timedelta(days=7)
-    recent_data = df[df['date'] >= one_week_ago.strftime("%Y-%m-%d")]
+    recent_data = df[df['date'] >= one_week_ago]
 
     if recent_data.empty:
         return "No recent summaries to analyze."
@@ -39,6 +66,10 @@ def generate_weekly_overview():
     # Separate portfolio and watchlist summaries
     portfolio_summaries = recent_data[recent_data['source'] == 'portfolio']
     watchlist_summaries = recent_data[recent_data['source'] == 'watchlist']
+
+    # Check if there are summaries to analyze
+    if portfolio_summaries.empty and watchlist_summaries.empty:
+        return "No portfolio or watchlist summaries available for the past week."
 
     # Construct prompt for GPT-4
     prompt = f"""
@@ -59,28 +90,37 @@ Use this data to:
 Your response should be a single comprehensive summary message, focusing on strategic actions to take at this point in time. Be clear and direct, leveraging the patterns observed in these daily summaries.
 """
 
-    openai_api_key = secrets['openai_api_key']
-    client = OpenAI(api_key=openai_api_key)
-
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a strategic financial advisor who synthesizes multiple asset insights into a coherent strategy."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=2000,
-        temperature=0.7
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a strategic financial advisor who synthesizes multiple asset insights into a coherent strategy."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=2000,
+            temperature=0.7
+        )
+    except Exception as e:
+        print(f"OpenAI API request failed: {e}")
+        return "Failed to generate weekly overview."
 
     overview = response.choices[0].message.content.strip()
     return overview
 
 if __name__ == "__main__":
-    overview = generate_weekly_overview()
-    print("=== Weekly Overview ===")
-    print(overview)
+    try:
+        overview = generate_weekly_overview()
+        print("=== Weekly Overview ===")
+        print(overview)
 
-    # Send to Telegram
-    telegram_bot_token = secrets['telegram_bot_token']
-    telegram_chat_id = secrets['telegram_chat_id']
-    send_telegram_message(overview, telegram_bot_token, telegram_chat_id)
+        # Send to Telegram
+        bot_token = secrets.get('telegram_bot_token')
+        chat_id = secrets.get('telegram_chat_id')
+
+        if not bot_token or not chat_id:
+            print("Telegram bot token or chat ID is not set. Skipping Telegram message.")
+        else:
+            send_telegram_message(overview, bot_token, chat_id)
+
+    except Exception as e:
+        print(f"Weekly overview generation failed: {e}")

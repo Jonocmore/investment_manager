@@ -39,9 +39,13 @@ async def run_pipeline_for_asset(asset):
     print(summary)
 
     # 4. Send to Telegram (optional)
-    bot_token = secrets['telegram_bot_token']
-    chat_id = secrets['telegram_chat_id']
-    send_telegram_message(summary, bot_token, chat_id)
+    bot_token = secrets.get('telegram_bot_token')
+    chat_id = secrets.get('telegram_chat_id')
+
+    if not bot_token or not chat_id:
+        print("Telegram bot token or chat ID is not set. Skipping Telegram message.")
+    else:
+        send_telegram_message(summary, bot_token, chat_id)
 
     # 5. Store daily summary for weekly aggregation
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -60,11 +64,14 @@ async def run_pipeline_for_asset(asset):
         df = pd.DataFrame([row])
         df.to_csv(daily_summary_file, index=False)
     else:
-        df_existing = pd.read_csv(daily_summary_file)
-        df_new = pd.DataFrame([row])
-        # Use pd.concat instead of append
-        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-        df_combined.to_csv(daily_summary_file, index=False)
+        try:
+            df_existing = pd.read_csv(daily_summary_file)
+            df_new = pd.DataFrame([row])
+            # Use pd.concat instead of append
+            df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+            df_combined.to_csv(daily_summary_file, index=False)
+        except Exception as e:
+            print(f"Failed to update daily summaries: {e}")
 
     print(f"Pipeline completed for {asset}.\n")
 
@@ -87,5 +94,8 @@ async def daily_workflow():
             print(f"Error processing {asset}: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(daily_workflow())
-    print("Daily workflow complete!")
+    try:
+        asyncio.run(daily_workflow())
+        print("Daily workflow complete!")
+    except Exception as e:
+        print(f"Daily workflow failed: {e}")

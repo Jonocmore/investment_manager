@@ -39,7 +39,7 @@ async def run_pipeline_for_asset(asset):
         print(f"Failed to fetch news for {asset}: {e}")
 
     try:
-        fetch_reddit_data_for_asset(asset, limit=20)
+        await fetch_reddit_data_for_asset(asset, limit=20)  # Await the coroutine
     except Exception as e:
         print(f"Failed to fetch Reddit data for {asset}: {e}")
 

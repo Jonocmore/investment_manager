@@ -1,4 +1,6 @@
 # fetch_reddit.py
+import os
+import asyncio
 import asyncpraw
 from utils import secrets
 
@@ -29,9 +31,9 @@ async def fetch_reddit_data_for_asset(asset, limit=20):
         # Save or process the posts as needed
         # Example: Save to CSV
         import pandas as pd
-        df_posts = pd.DataFrame(posts)
         data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
         reddit_file = os.path.join(data_dir, f"reddit_{asset}_data.csv")
+        df_posts = pd.DataFrame(posts)
         df_posts.to_csv(reddit_file, index=False)
         print(f"Saved Reddit data for {asset} to {reddit_file}")
     except Exception as e:

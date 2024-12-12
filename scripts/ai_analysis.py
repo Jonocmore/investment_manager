@@ -1,7 +1,7 @@
 # ai_analysis.py
 import os
 import pandas as pd
-import openai  # Import the entire openai package
+import openai  # Ensure openai>=1.0.0 is installed
 from utils import portfolio, settings, secrets
 
 # Initialize OpenAI client with the API key from environment variables
@@ -120,7 +120,7 @@ Just give a direct, current action based on the synthesis of all data.
 
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",  # Updated to use GPT-4
             messages=[
                 {"role": "system", "content": "You are a financial assistant who provides precise, timely, and data-driven market insights without telling the user to watch or monitor anything."},
                 {"role": "user", "content": prompt}

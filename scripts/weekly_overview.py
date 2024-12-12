@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 import datetime
-import openai  # Import the entire openai package
+import openai  # Ensure openai>=1.0.0 is installed
 import requests
 from utils import portfolio, settings, secrets
 
@@ -92,7 +92,7 @@ Your response should be a single comprehensive summary message, focusing on stra
 
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4",  # Updated to use GPT-4
             messages=[
                 {"role": "system", "content": "You are a strategic financial advisor who synthesizes multiple asset insights into a coherent strategy."},
                 {"role": "user", "content": prompt}

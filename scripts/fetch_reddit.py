@@ -15,7 +15,7 @@ async def fetch_reddit_data_for_asset(asset, limit=20):
     Fetches the top Reddit posts for a given asset and saves them to a CSV file.
 
     Parameters:
-    - asset (str): The asset symbol or name (e.g., 'AAPL', 'MSFT', 'bitcoin').
+    - asset (str): The asset symbol or name (e.g., 'AAPL', 'bitcoin').
     - limit (int): The number of top posts to fetch.
     """
     reddit_client_id = secrets.get('reddit_client_id')
@@ -35,9 +35,8 @@ async def fetch_reddit_data_for_asset(asset, limit=20):
             user_agent=reddit_user_agent
         )
 
-        # Await the subreddit coroutine
+        # Await the subreddit coroutine to get the actual Subreddit object
         subreddit = await reddit.subreddit(asset)
-        logger.info(f"Subreddit {subreddit.display_name} found.")
 
         posts = []
         logger.info(f"Fetching top {limit} hot posts from r/{asset}...")
@@ -45,7 +44,10 @@ async def fetch_reddit_data_for_asset(asset, limit=20):
             posts.append({
                 "title": submission.title,
                 "score": submission.score,
-                "subreddit": submission.subreddit.display_name
+                "num_comments": submission.num_comments,
+                "created_utc": submission.created_utc,
+                "url": submission.url,
+                "subreddit": submission.subreddit.display_name,
             })
 
         if not posts:
@@ -70,11 +72,31 @@ async def fetch_reddit_data_for_asset(asset, limit=20):
         await reddit.close()
         logger.info("Reddit client closed.")
 
-async def main():
-    # List of assets to fetch data for
-    assets = ['python', 'bitcoin', 'ethereum', 'AAPL']
-    tasks = [fetch_reddit_data_for_asset(asset, limit=10) for asset in assets]
+async def fetch_all_reddit_data(limit=20):
+    """
+    Fetches Reddit data for all assets in portfolio.yaml.
+    """
+    from utils import portfolio  # Import dynamically to avoid circular imports
+
+    portfolio_data = portfolio.get('portfolio', {})
+    watchlist_data = portfolio.get('watchlist', {})
+
+    # Combine portfolio and watchlist assets
+    portfolio_assets = portfolio_data.get('stocks', []) + \
+                       portfolio_data.get('etfs', []) + \
+                       portfolio_data.get('crypto', [])
+    watchlist_assets = watchlist_data.get('stocks', []) + \
+                       watchlist_data.get('crypto', [])
+
+    all_assets = portfolio_assets + watchlist_assets
+    logger.info(f"Assets to process for Reddit data: {all_assets}")
+
+    tasks = [fetch_reddit_data_for_asset(asset, limit) for asset in all_assets]
     await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(fetch_all_reddit_data(limit=20))
+        print("Reddit data fetch complete!")
+    except Exception as e:
+        print(f"Error fetching Reddit data: {e}")

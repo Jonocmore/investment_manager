@@ -8,13 +8,13 @@ portfolio:
     - VOO
   crypto:
     - bitcoin
+    - ripple
+    - sui
+    - ethereum
+    - solana
 watchlist:
   stocks:
     - ATAI
     - CPRT
   crypto:
     - cardano
-    - ripple
-    - sui
-    - ethereum
-    - solana
